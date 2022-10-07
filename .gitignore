@@ -1,0 +1,5 @@
+migrations
+examples
+.idea
+.DS_Store
+__pycache__

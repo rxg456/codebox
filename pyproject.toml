@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "codebox"
+version = "0.1.0"
+description = ""
+authors = ["rxg <ruanxiguang@foxmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+django = "4.0.6"
+djangorestframework = "3.13.1"
+drf-spectacular = "0.22.1"
+ansible-runner = "2.2.1"
+mysqlclient = "^2.1.1"
+gitpython = "3.1.27"
+
+
+[tool.poetry.group.dev.dependencies]
+ansible = "6.0.0"
+ipython = "8.4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "some-package"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
