@@ -12,7 +12,7 @@ class StandardResultSetPagination(PageNumberPagination):
         return Response(OrderedDict([
             ('count', self.page.paginator.count),
             ('page', self.page.number),
-            ('size', self.page_size),
+            ('size', self.get_page_size(self.request)),
             ('num_pages', self.page.paginator.num_pages),
             ('results', data)
         ]))

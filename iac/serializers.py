@@ -3,6 +3,15 @@ from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField
 from . import models
 
 
+class MutationSerializerMixin:
+    def get_fields(self):
+        fields = {}
+        for name, field in super().get_fields().items():
+            field.required = False
+            fields[name] = field
+        return fields
+
+
 class RepositoryCreationSerializer(ModelSerializer):
     class Meta:
         model = models.Repository
@@ -13,6 +22,12 @@ class RepositorySerializer(ModelSerializer):
     class Meta:
         model = models.Repository
         fields = "__all__"
+
+
+class RepositoryMutationSerializer(MutationSerializerMixin, ModelSerializer):
+    class Meta:
+        model = models.Repository
+        fields = ["name", "remark"]
 
 
 class MissionCreationSerializer(ModelSerializer):
