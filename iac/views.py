@@ -1,5 +1,7 @@
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import status
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
@@ -57,9 +59,14 @@ class MissionViewSet(GenericViewSet):
             return Response(data=MissionSerializer(serializer.instance).data)
         return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @extend_schema("listMissions", responses=MissionSerializer(many=True))
-    def list(self, request, *args, **kwargs):
-        res = self.paginate_queryset(self.queryset)
+    @extend_schema("listMissions", responses=MissionSerializer(many=True),
+                   parameters=[OpenApiParameter(name="repository", type=OpenApiTypes.INT64)])
+    def list(self, request: Request, *args, **kwargs):
+        queryset = self.queryset
+        repository = request.query_params.get("repository")
+        if repository:
+            queryset = queryset.filter(repository__id=repository)
+        res = self.paginate_queryset(queryset)
         serializer = MissionSerializer(instance=res, many=True)
         return self.get_paginated_response(serializer.data)
 

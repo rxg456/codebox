@@ -143,5 +143,5 @@ SPECTACULAR_SETTINGS = {
         'deepLinking': True,
         'displayOperationId': True
     },
-    'COMPONENT_SPLIT_REQUEST': True
+    'COMPONENT_SPLIT_REQUEST': False
 }
