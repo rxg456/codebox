@@ -17,6 +17,7 @@ class Runner:
         self.workdir.mkdir(parents=True)
         repo = Repo.clone_from(url=self.model.repository.url, to_path=self.workdir)
         self.model.commit = repo.head.commit.hexsha
+        self.model.state = MissionState.RUNNING
         self.model.save()
 
     def exec(self):

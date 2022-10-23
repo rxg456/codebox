@@ -1,7 +1,8 @@
+from django.contrib.auth.models import User
 from django.db import models
 
 
-class TimestampMibIn(models.Model):
+class TimestampMinIn(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -24,9 +25,21 @@ class MissionState(models.IntegerChoices):
     TIMEOUT = 5, 'TIMEOUT'
 
 
-class Mission(TimestampMibIn, models.Model):
+class Mission(TimestampMinIn, models.Model):
     repository = models.ForeignKey(Repository, on_delete=models.PROTECT)
     playbook = models.CharField(max_length=64)
     state = models.IntegerField(choices=MissionState.choices, default=MissionState.PENDING)
     output = models.TextField(null=True)
     commit = models.CharField(max_length=64, null=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class Authorization(TimestampMinIn, models.Model):
+    token = models.CharField(max_length=32, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    expired_at = models.DateTimeField(null=False)
+
+    class Meta:
+        index_together = [["token", "expired_at"]]

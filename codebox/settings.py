@@ -122,6 +122,9 @@ MEDIA_ROOT = 'repository/'
 
 IAC_WORKDIR = '/tmp/codebox/'
 
+# token过期时间秒
+TOKEN_ACTIVE_TIME = 3600
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
@@ -130,7 +133,31 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'iac.pagination.StandardResultSetPagination',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'iac.authentication.BearerTokenAuthentication'
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.DjangoModelPermissions'
+    ],
     'PAGE_SIZE': 100,
+}
+
+# log
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
 }
 
 SPECTACULAR_SETTINGS = {

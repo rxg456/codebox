@@ -1,14 +1,40 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from .models import Mission, Repository
+from .models import Mission, Repository, Authorization
 from .runner import Runner
 from .serializers import MissionSerializer, MissionCreationSerializer, RepositorySerializer, \
-    RepositoryCreationSerializer, RepositoryMutationSerializer
+    RepositoryCreationSerializer, RepositoryMutationSerializer, AuthorizationSerializer, LoginSerializer
+
+
+@extend_schema(tags=["Auth"])
+class AuthorizationViewSet(GenericViewSet):
+    queryset = Authorization.objects.all()
+    serializer_class = AuthorizationSerializer
+
+    @extend_schema("login", request=LoginSerializer, responses=AuthorizationSerializer)
+    @action(methods=["post"], detail=False, permission_classes=[AllowAny])
+    def login(self, request, *args, **kwargs):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(AuthorizationSerializer(serializer.instance).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema("logout", request=None, responses=None)
+    @action(methods=["put"], detail=False)
+    def logout(self, request: Request, *args, **kwargs):
+        try:
+            Authorization.objects.filter(token=request.auth).delete()
+        except Authorization.DoesNotExist:
+            pass
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(tags=["IacRepository"])
@@ -47,7 +73,7 @@ class RepositoryViewSet(GenericViewSet):
 
 @extend_schema(tags=["IacMission"])
 class MissionViewSet(GenericViewSet):
-    queryset = Mission.objects.all().order_by("id")
+    queryset = Mission.objects.all()
     serializer_class = MissionSerializer
 
     @extend_schema("createMission", request=MissionCreationSerializer, responses=MissionSerializer)
