@@ -10,7 +10,8 @@ from rest_framework.viewsets import GenericViewSet
 from .models import Mission, Repository, Authorization
 from .runner import Runner
 from .serializers import MissionSerializer, MissionCreationSerializer, RepositorySerializer, \
-    RepositoryCreationSerializer, RepositoryMutationSerializer, AuthorizationSerializer, LoginSerializer
+    RepositoryCreationSerializer, RepositoryMutationSerializer, AuthorizationSerializer, LoginSerializer, \
+    MissionWithEventsSerializer
 
 
 @extend_schema(tags=["Auth"])
@@ -36,6 +37,15 @@ class AuthorizationViewSet(GenericViewSet):
             pass
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @extend_schema("logoutAll", request=None, responses=None)
+    @action(methods=["delete"], detail=False)
+    def logout(self, request: Request, *args, **kwargs):
+        try:
+            Authorization.objects.filter(user=request.user).delete()
+        except Authorization.DoesNotExist:
+            pass
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 @extend_schema(tags=["IacRepository"])
 class RepositoryViewSet(GenericViewSet):
@@ -47,7 +57,7 @@ class RepositoryViewSet(GenericViewSet):
     def create(self, request, *args, **kwargs):
         serializer = RepositoryCreationSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(created_by=request.user)
             return Response(RepositorySerializer(serializer.instance).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -66,7 +76,7 @@ class RepositoryViewSet(GenericViewSet):
     def update(self, request, *args, **kwargs):
         serializer = RepositoryMutationSerializer(self.get_object(), data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(updated_by=request.user)
             return Response(RepositorySerializer(serializer.instance).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -80,10 +90,17 @@ class MissionViewSet(GenericViewSet):
     def create(self, request, *args, **kwargs):
         serializer = MissionCreationSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(created_by=request.user)
             Runner(serializer.instance).run()
             return Response(data=MissionSerializer(serializer.instance).data)
         return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema("cancelMission", request=None, responses=MissionSerializer)
+    @action(methods=["put"], detail=True)
+    def cancel(self, request, *args, **kwargs):
+        instance = self.get_object()
+        Runner.cancel(instance)
+        return Response(data=MissionSerializer(instance).data)
 
     @extend_schema("listMissions", responses=MissionSerializer(many=True),
                    parameters=[OpenApiParameter(name="repository", type=OpenApiTypes.INT64)])
@@ -96,7 +113,7 @@ class MissionViewSet(GenericViewSet):
         serializer = MissionSerializer(instance=res, many=True)
         return self.get_paginated_response(serializer.data)
 
-    @extend_schema("getMission", responses=MissionSerializer)
+    @extend_schema("getMission", responses=MissionWithEventsSerializer)
     def retrieve(self, request, *args, **kwargs):
-        serializer = MissionSerializer(self.get_object())
+        serializer = MissionWithEventsSerializer(self.get_object())
         return Response(serializer.data)

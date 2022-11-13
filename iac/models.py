@@ -10,7 +10,15 @@ class TimestampMinIn(models.Model):
         abstract = True
 
 
-class Repository(models.Model):
+class AuditMixin(TimestampMinIn):
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, null=True, related_name="+")
+    updated_by = models.ForeignKey(User, on_delete=models.PROTECT, null=True, related_name="+")
+
+    class Meta:
+        abstract = True
+
+
+class Repository(AuditMixin, models.Model):
     name = models.CharField(max_length=32, unique=True)
     remark = models.CharField(max_length=512, null=True)
     url = models.CharField(max_length=512, null=True)
@@ -25,15 +33,33 @@ class MissionState(models.IntegerChoices):
     TIMEOUT = 5, 'TIMEOUT'
 
 
-class Mission(TimestampMinIn, models.Model):
+class Mission(AuditMixin, models.Model):
     repository = models.ForeignKey(Repository, on_delete=models.PROTECT)
     playbook = models.CharField(max_length=64)
     state = models.IntegerField(choices=MissionState.choices, default=MissionState.PENDING)
     output = models.TextField(null=True)
     commit = models.CharField(max_length=64, null=True)
+    inventories = models.TextField(null=True)
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class MissionEvent(models.Model):
+    mission = models.ForeignKey(Mission, on_delete=models.CASCADE, related_name="events")
+    state = models.CharField(max_length=60)
+    uuid = models.UUIDField()
+    host = models.CharField(max_length=128)
+    play = models.CharField(max_length=128)
+    play_pattern = models.CharField(max_length=128)
+    task = models.CharField(max_length=128)
+    task_action = models.CharField(max_length=128)
+    task_args = models.TextField()
+    start = models.DateTimeField(null=True)
+    end = models.DateTimeField(null=True)
+    duration = models.FloatField(null=True)
+    res = models.JSONField(null=True)
+    changed = models.BooleanField(default=False)
 
 
 class Authorization(TimestampMinIn, models.Model):

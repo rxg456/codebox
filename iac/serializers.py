@@ -65,6 +65,9 @@ class RepositoryCreationSerializer(ModelSerializer):
 
 
 class RepositorySerializer(ModelSerializer):
+    created_by = UserSerializer(read_only=True)
+    updated_by = UserSerializer(read_only=True)
+
     class Meta:
         model = models.Repository
         fields = "__all__"
@@ -81,11 +84,30 @@ class MissionCreationSerializer(ModelSerializer):
 
     class Meta:
         model = models.Mission
-        fields = ["repository", "playbook"]
+        fields = ["repository", "playbook", "inventories"]
+
+
+class MissionEventSerializer(ModelSerializer):
+    class Meta:
+        model = models.MissionEvent
+        fields = '__all__'
 
 
 class MissionSerializer(ModelSerializer):
     repository = RepositorySerializer(read_only=True)
+    created_by = UserSerializer(read_only=True)
+    updated_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = models.Mission
+        fields = '__all__'
+
+
+class MissionWithEventsSerializer(ModelSerializer):
+    repository = RepositorySerializer(read_only=True)
+    created_by = UserSerializer(read_only=True)
+    updated_by = UserSerializer(read_only=True)
+    events = MissionEventSerializer(read_only=True, many=True)
 
     class Meta:
         model = models.Mission
