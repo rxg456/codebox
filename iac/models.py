@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django_celery_beat.models import PeriodicTask
 
 
 class TimestampMinIn(models.Model):
@@ -34,13 +35,25 @@ class MissionState(models.IntegerChoices):
     CANCELING = 6, 'CANCELING'
 
 
-class Mission(AuditMixin, models.Model):
+class MissionMode(models.IntegerChoices):
+    MANUAL = 0, 'MANUAL'
+    PERIODIC = 1, 'PERIODIC'
+
+
+class MissionTemplate(AuditMixin, models.Model):
     repository = models.ForeignKey(Repository, on_delete=models.PROTECT)
     playbook = models.CharField(max_length=64)
+    inventories = models.TextField(null=True)
+
+    class Meta:
+        abstract = True
+
+
+class Mission(MissionTemplate):
+    mode = models.IntegerField(default=MissionMode.MANUAL)
     state = models.IntegerField(choices=MissionState.choices, default=MissionState.PENDING)
     output = models.TextField(null=True)
     commit = models.CharField(max_length=64, null=True)
-    inventories = models.TextField(null=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -61,6 +74,11 @@ class MissionEvent(models.Model):
     duration = models.FloatField(null=True)
     res = models.JSONField(null=True)
     changed = models.BooleanField(default=False)
+
+
+class PeriodicMission(MissionTemplate):
+    uuid = models.UUIDField(unique=True, editable=False)
+    scheduler = models.OneToOneField(PeriodicTask, on_delete=models.PROTECT, related_name="periodic_mission")
 
 
 class Authorization(TimestampMinIn, models.Model):

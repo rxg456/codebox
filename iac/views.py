@@ -1,3 +1,4 @@
+from django.db import transaction
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import status
@@ -7,11 +8,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from .models import Mission, Repository, Authorization
+from .models import Mission, Repository, Authorization, PeriodicMission
 from .runner import Runner
-from .serializers import MissionSerializer, MissionCreationSerializer, RepositorySerializer, \
-    RepositoryCreationSerializer, RepositoryMutationSerializer, AuthorizationSerializer, LoginSerializer, \
-    MissionWithEventsSerializer
+from .serializers import *
 from .tasks import execute
 
 
@@ -119,3 +118,62 @@ class MissionViewSet(GenericViewSet):
     def retrieve(self, request, *args, **kwargs):
         serializer = MissionWithEventsSerializer(self.get_object())
         return Response(serializer.data)
+
+
+@extend_schema(tags=["PeriodicMission"])
+class PeriodicMissionViewSet(GenericViewSet):
+    queryset = PeriodicMission.objects.all()
+    serializer_class = PeriodicMissionSerializer
+
+    @extend_schema("createPeriodicMission", request=PeriodicMissionCreationSerializer,
+                   responses=PeriodicMissionSerializer)
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        serializer = PeriodicMissionCreationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(created_by=request.user)
+            return Response(data=PeriodicMissionSerializer(serializer.instance).data)
+        return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema("listPeriodicMissions", responses=PeriodicMissionSerializer(many=True),
+                   parameters=[OpenApiParameter(name="repository", type=OpenApiTypes.INT64)])
+    def list(self, request: Request, *args, **kwargs):
+        queryset = self.queryset
+        repository = request.query_params.get("repository")
+        if repository:
+            queryset = queryset.filter(repository__id=repository)
+        res = self.paginate_queryset(queryset)
+        serializer = PeriodicMissionSerializer(instance=res, many=True)
+        return self.get_paginated_response(serializer.data)
+
+    @extend_schema("disablePeriodicMission", request=None, responses=PeriodicMissionSerializer)
+    @action(methods=["put"], detail=True)
+    def disable(self, request: Request, *args, **kwargs):
+        instance: PeriodicMission = self.get_object()
+        instance.scheduler.enabled = False
+        instance.scheduler.save()
+        return Response(PeriodicMissionSerializer(instance=instance).data)
+
+    @extend_schema("enablePeriodicMission", request=None, responses=PeriodicMissionSerializer)
+    @action(methods=["put"], detail=True)
+    def enable(self, request: Request, *args, **kwargs):
+        instance: PeriodicMission = self.get_object()
+        instance.scheduler.enabled = True
+        instance.scheduler.save()
+        return Response(PeriodicMissionSerializer(instance=instance).data)
+
+    @extend_schema("getPeriodicMission", responses=PeriodicMissionSerializer)
+    def retrieve(self, request, *args, **kwargs):
+        serializer = PeriodicMissionSerializer(self.get_object())
+        return Response(serializer.data)
+
+    @extend_schema("updatePeriodicMission", responses=PeriodicMissionSerializer,
+                   request=PeriodicMissionMutationSerializer)
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = PeriodicMissionMutationSerializer(instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save(updated_by=request.user)
+            return Response(PeriodicMissionMutationSerializer(serializer.instance).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
