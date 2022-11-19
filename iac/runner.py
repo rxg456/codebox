@@ -96,11 +96,11 @@ class Runner:
     @classmethod
     def cancel(cls, mission: Mission):
         if mission.state == MissionState.RUNNING or mission.state == MissionState.PENDING:
-            mission.state = MissionState.CANCELED
+            mission.state = MissionState.CANCELING
             mission.save()
 
     def is_canceled(self):
-        return Mission.objects.get(id=self.model.id).state == MissionState.CANCELED
+        return Mission.objects.get(id=self.model.id).state == MissionState.CANCELING
 
     def exec(self):
         try:

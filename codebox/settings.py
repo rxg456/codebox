@@ -30,6 +30,8 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     "iac",
+    'django_celery_results',
+    'django_celery_beat',
     "rest_framework",
     "drf_spectacular",
     'django.contrib.admin',
@@ -172,3 +174,8 @@ SPECTACULAR_SETTINGS = {
     },
     'COMPONENT_SPLIT_REQUEST': False
 }
+
+# celery配置
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/1'
+CELERY_TIMEZONE = "Asia/Shanghai"
+CELERY_RESULT_BACKEND = 'django-db'

@@ -31,6 +31,7 @@ class MissionState(models.IntegerChoices):
     FAILED = 3, 'FAILED'
     CANCELED = 4, 'CANCELED'
     TIMEOUT = 5, 'TIMEOUT'
+    CANCELING = 6, 'CANCELING'
 
 
 class Mission(AuditMixin, models.Model):

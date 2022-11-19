@@ -13,6 +13,9 @@ drf-spectacular = "0.22.1"
 ansible-runner = "2.2.1"
 mysqlclient = "^2.1.1"
 gitpython = "3.1.27"
+celery = {version = "5.2.7", extras = ["redis"]}
+django-celery-results = "2.4.0"
+django-celery-beat = "2.3.0"
 
 
 [tool.poetry.group.dev.dependencies]

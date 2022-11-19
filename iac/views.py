@@ -12,6 +12,7 @@ from .runner import Runner
 from .serializers import MissionSerializer, MissionCreationSerializer, RepositorySerializer, \
     RepositoryCreationSerializer, RepositoryMutationSerializer, AuthorizationSerializer, LoginSerializer, \
     MissionWithEventsSerializer
+from .tasks import execute
 
 
 @extend_schema(tags=["Auth"])
@@ -91,7 +92,8 @@ class MissionViewSet(GenericViewSet):
         serializer = MissionCreationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(created_by=request.user)
-            Runner(serializer.instance).run()
+            execute.delay(serializer.instance.id)
+            # Runner(serializer.instance).run()
             return Response(data=MissionSerializer(serializer.instance).data)
         return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
